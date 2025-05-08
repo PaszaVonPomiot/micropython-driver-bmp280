@@ -1,0 +1,11 @@
+{
+    "files.exclude": {
+        ".mypy_cache": true,
+        ".ruff_cache": true,
+        "**/__pycache__": true
+    },
+    "python.analysis.typeCheckingMode": "basic", // Pylance type checking
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingModuleSource": "none"
+    } // Pylance will not report missing modules for micropython-stubs
+}

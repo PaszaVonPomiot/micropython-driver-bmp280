@@ -1,0 +1,13 @@
+{
+    "folders": [
+        {
+            "name": "micropython-driver-bmp280",
+            "path": "."
+        },
+        {
+            "name": "Pico",
+            "uri": "pico:/"
+        }
+    ],
+    "settings": {}
+}
