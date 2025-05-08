@@ -19,3 +19,16 @@ MicroPython driver for BMP280 temperature and pressure sensor over I2C interface
 ## Code examples
 
 Working code example can be found in [main.py](main.py) file.
+
+```py
+from machine import Pin, I2C
+from bmp280 import BMP280
+
+i2c = I2C(0, scl=Pin(9), sda=Pin(8))
+sensor = BMP280(i2c=i2c)
+print(sensor.read_measurements())  # (temperature, pressure)
+```
+
+# Acknowledgements
+
+-   [flrrth](https://github.com/flrrth) @ [https://github.com/flrrth/pico-bmp280](https://github.com/flrrth/pico-bmp280) - for the inspiration
