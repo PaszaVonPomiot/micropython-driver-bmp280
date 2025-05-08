@@ -20,7 +20,7 @@ def main():
     )
 
     while True:
-        print(sensor.read_calibrated())
+        print(sensor.read_measurements())
         sleep_ms(200)
 
 

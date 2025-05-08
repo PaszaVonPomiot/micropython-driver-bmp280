@@ -92,6 +92,10 @@ class BMP280:
     REG_CALIB25 = const(0xA1)  # Calibration data end
     REG_CALIB00 = const(0x88)  # Calibration data start
 
+    # Other constants
+    RESET_CODE = 0xB6
+    STATUS_MASK = 0b00001001
+
     def __init__(
         self,
         i2c: I2C,
@@ -107,7 +111,10 @@ class BMP280:
         self._configure_sensor()
 
     def _read_register(self, register: int, burst: int = 1) -> bytes:
-        """Read a single or multiple bytes from a register on the BMP280 sensor."""
+        """
+        Read a single (burst=1) or multiple (burst>1) bytes from a register
+        on the BMP280 sensor.
+        """
         data = self._i2c.readfrom_mem(self._i2c_address, register, burst, addrsize=8)
         return data
 
@@ -151,8 +158,13 @@ class BMP280:
         config = self._read_register(self.REG_CONFIG)
         return config[0]
 
-    def _dump_registers(self) -> None:
-        """Dump key registers to the console."""
+    def _get_id(self) -> int:
+        """Get byte from the ID register."""
+        chip_id = self._read_register(self.REG_ID)
+        return chip_id[0]
+
+    def _print_registers(self) -> None:
+        """Print key registers to the console."""
         for register in [0xD0, 0xE0] + list(range(0xF3, 0xFD)):
             value = self._read_register(register=register)
             print(f"0x{register:02X}: {value[0]:08b}")
@@ -182,62 +194,55 @@ class BMP280:
         pressure = pressure + (var1 + var2 + self._dig_P7) / 16.0
         return pressure
 
-    def _is_measurement_ready(self) -> bool:
-        """"""
+    def _is_sensor_idle(self) -> bool:
+        """Sensor is not performing a measurement or updating its registers."""
         status = self._get_status()
-        return (status & 0b00001001) == 0
+        return (status & self.STATUS_MASK) == 0
 
-    def _force_measurement(self, miliseconds: int = 44) -> None:
+    def _ensure_forced_mode_measurement(self) -> None:
+        """
+        Ensure a measurement is triggered if the sensor is in FORCED mode.
+        """
+        if self._power_mode == BMP280Config.POWER_MODE_FORCED:
+            self._force_measurement()
+
+    def _force_measurement(self, milliseconds: int = 44) -> None:
         """
         Forcing meaurement requires a write to the CTRL_MEAS register.
         Measurement takes from 7 to 65 ms depending on oversampling configuration.
         P x16, T x2, F2 ~ 41 ms
         """
         self._write_register(register=self.REG_CTRL_MEAS, value=self._ctrl_meas)
-        sleep_ms(miliseconds)
+        sleep_ms(milliseconds)
 
-    def set_power_mode(self, power_mode: int) -> None:
-        """Change the power mode of the sensor. Forced mode goes to sleep after measurement."""
-        self._power_mode = power_mode
-        new_ctrl_meas: int = struct.unpack("B", self._ctrl_meas)[0]
-        new_ctrl_meas = (new_ctrl_meas & 0b11111100) | power_mode
-        self._ctrl_meas = struct.pack("B", new_ctrl_meas)
-        self._write_register(register=self.REG_CTRL_MEAS, value=self._ctrl_meas)
-
-    def reset(self) -> None:
-        """Reset the sensor."""
-        reset_code = struct.pack("B", 0xB6)
-        self._write_register(register=self.REG_RESET, value=reset_code)
-        sleep_ms(100)
-
-    def read_raw_temperature(self) -> int:
+    def _read_raw_temperature(self) -> int:
         """
         Read the raw temperature value from the register.
         For combined read of temperature and pressure, use read_raw() instead.
         """
-        if self._power_mode == BMP280Config.POWER_MODE_FORCED:
-            self._force_measurement()
+        self._ensure_forced_mode_measurement()
         burst_data = self._read_register(register=self.REG_TEMP_MSB, burst=3)
         raw_temp = (burst_data[0] << 12) | (burst_data[1] << 4) | (burst_data[2] >> 4)
         return raw_temp
 
-    def read_raw_pressure(self) -> int:
+    def _read_raw_pressure(self) -> int:
         """
         Read the raw pressure value from the register.
         For combined read of temperature and pressure, use read_raw() instead.
         """
-        if self._power_mode == BMP280Config.POWER_MODE_FORCED:
-            self._force_measurement()
+        self._ensure_forced_mode_measurement()
         burst_data = self._read_register(register=self.REG_PRESS_MSB, burst=3)
         raw_pressure = (
             (burst_data[0] << 12) | (burst_data[1] << 4) | (burst_data[2] >> 4)
         )
         return raw_pressure
 
-    def read_raw(self) -> tuple[int, int]:
-        """Read the raw temperature and pressure values from the register."""
-        if self._power_mode == BMP280Config.POWER_MODE_FORCED:
-            self._force_measurement()
+    def _read_raw_measurements(self) -> tuple[int, int]:
+        """
+        Read the raw temperature and pressure values from the sensor registers.
+        If the power mode is set to FORCED, a measurement will be triggered before reading.
+        """
+        self._ensure_forced_mode_measurement()
         burst_data = self._read_register(register=self.REG_PRESS_MSB, burst=6)
         raw_temperature = (
             (burst_data[3] << 12) | (burst_data[4] << 4) | (burst_data[5] >> 4)
@@ -247,9 +252,33 @@ class BMP280:
         )
         return raw_temperature, raw_pressure
 
-    def read_calibrated(self) -> tuple[float, float]:
-        """Read and return the calibrated temperature (°C) and pressure (Pa)."""
-        raw_temperature, raw_pressure = self.read_raw()
+    def reset(self) -> None:
+        """Reset the sensor."""
+        reset_code = struct.pack("B", self.RESET_CODE)
+        self._write_register(register=self.REG_RESET, value=reset_code)
+        sleep_ms(100)
+
+    def read_temperature(self) -> float:
+        """
+        Read and return the compensated temperature (°C).
+        For combined read of temperature and pressure, use read_raw_measurements() instead.
+        """
+        raw_temperature = self._read_raw_temperature()
+        temperature = self._compensate_temperature(raw_temperature)
+        return temperature
+
+    def read_pressure(self) -> float:
+        """
+        Read and return the compensated pressure (Pa).
+        For combined read of temperature and pressure, use read_raw_measurements() instead.
+        """
+        raw_pressure = self._read_raw_pressure()
+        pressure = self._compensate_pressure(raw_pressure)
+        return pressure
+
+    def read_measurements(self) -> tuple[float, float]:
+        """Read and return the compensated temperature (°C) and pressure (Pa)."""
+        raw_temperature, raw_pressure = self._read_raw_measurements()
         temperature = self._compensate_temperature(raw_temperature)
         pressure = self._compensate_pressure(raw_pressure)
         return temperature, pressure

@@ -1,7 +1,7 @@
 [project]
 name = "micropython-driver-bmp280"
 version = "0.1.0"
-description = "MicroPython driver for BMP280 temperature and pressure sensor"
+description = "MicroPython driver for BMP280 temperature and pressure sensor over I2C interface"
 readme = "README.md"
 requires-python = ">=3.13"  # for type annotations only
 dependencies = []
