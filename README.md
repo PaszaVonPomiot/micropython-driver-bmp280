@@ -1,6 +1,6 @@
-# MicroPython driver for BMP280 temperature and pressure sensor
+# MicroPython driver for BMP280 over I2C
 
-MicroPython driver for BMP280 temperature and pressure sensor that supports I2C interface.
+MicroPython driver for BMP280 temperature and pressure sensor over I2C interface.
 
 ![BMP280](docs/img/bmp280-pinout.webp)
 
@@ -15,14 +15,8 @@ MicroPython driver for BMP280 temperature and pressure sensor that supports I2C 
 
 ## Installation
 
-Copy the `bmp280.py` file or `lib` folder to the root of your MicroPython device filesystem.
-
-## Functional description
-
-## Pinout
-
-## Interfaces
+-   Copy the `bmp280.py` file or `lib` folder to the root of your MicroPython device filesystem.
 
 ## Code examples
 
-Working code example can be found in `main.py` file.
+Working code example can be found in [main.py](main.py) file.
