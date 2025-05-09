@@ -150,20 +150,12 @@ class BMP280:
         status = self._read_register(REG_STATUS)
         return status[0]
 
-    def _is_sensor_idle(self) -> bool:
-        """Sensor is not performing a measurement or updating its registers."""
-        status = self._get_status()
-        return (status & STATUS_MASK) == 0
-
-    def get_id(self) -> int:
-        """Get byte from the ID register."""
-        chip_id = self._read_register(REG_ID)
-        return chip_id[0]
-
-    def _compensate_temperature(self, raw_temp: int) -> float:
+    def _compensate_temperature(self, raw_temperature: int) -> float:
         """Compensate the raw temperature value using calibration data."""
-        var1 = ((raw_temp / 16384.0) - (self._dig_T1 / 1024.0)) * self._dig_T2
-        var2 = (((raw_temp / 131072.0) - (self._dig_T1 / 8192.0)) ** 2) * self._dig_T3
+        var1 = ((raw_temperature / 16384.0) - (self._dig_T1 / 1024.0)) * self._dig_T2
+        var2 = (
+            ((raw_temperature / 131072.0) - (self._dig_T1 / 8192.0)) ** 2
+        ) * self._dig_T3
         self._t_fine = int(var1 + var2)  # Store t_fine for pressure compensation
         temperature = (var1 + var2) / 5120.0
         return temperature
@@ -237,6 +229,16 @@ class BMP280:
             (burst_data[0] << 12) | (burst_data[1] << 4) | (burst_data[2] >> 4)
         )
         return raw_temperature, raw_pressure
+
+    def is_sensor_idle(self) -> bool:
+        """Check if sensor is not performing a measurement or updating its registers."""
+        status = self._get_status()
+        return (status & STATUS_MASK) == 0
+
+    def get_chip_id(self) -> str:
+        """Get byte from the ID register."""
+        chip_id = self._read_register(REG_ID)
+        return hex(chip_id[0])
 
     def reset(self) -> None:
         """Reset the sensor."""
