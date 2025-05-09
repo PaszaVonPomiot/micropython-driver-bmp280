@@ -5,7 +5,6 @@ MicroPython driver for BMP280 temperature and pressure sensor over I2C interface
 
 ## Hardware
 
--   [Raspberry Pi Pico](https://www.raspberrypi.com/products/raspberry-pi-pico/)
 -   [BMP280 Datasheet](docs/bst-bmp280-ds001.pdf)
 
 ## Software
@@ -30,7 +29,7 @@ MicroPython driver for BMP280 temperature and pressure sensor over I2C interface
 
 -   `get_temperature() -> float` - reads temperature in Celsius.
 
--   `get_pressure() -> float` - reads the pressure in hPa.
+-   `get_pressure() -> float` - reads pressure in hPa.
 
 ### `BMP280Configuration`
 
