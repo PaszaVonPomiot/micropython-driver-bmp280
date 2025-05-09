@@ -3,17 +3,15 @@ name = "micropython-driver-bmp280"
 version = "0.1.0"
 description = "MicroPython driver for BMP280 temperature and pressure sensor over I2C interface"
 readme = "README.md"
-requires-python = ">=3.13"  # for type annotations only
+requires-python = ">=3.13"                                                                       # for type annotations only
 dependencies = []
 
 [tool.ruff]
-lint.ignore = ["F401"]  # Ignore unused imports
+lint.ignore = ["F401"] # Ignore unused imports
+builtins = ["const"]   # built-in micropython
 
 [tool.mypy]
-ignore_missing_imports = true
-follow_imports = "silent"
+custom_typeshed_dir = ".venv/Lib/site-packages"
 
 [dependency-groups]
-dev = [
-    "micropython-rp2-pico-stubs",
-]
+dev = ["micropython-rp2-pico-stubs"]
