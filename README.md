@@ -39,7 +39,7 @@ MicroPython driver for BMP280 temperature and pressure sensor over I2C interface
         -   `BMP280PowerMode.NORMAL`
         -   `BMP280PowerMode.SLEEP`
         -   `BMP280PowerMode.FORCED` (default)
-    -   `temperature_oversampling`:
+    -   `temperature_oversampling`
         -   `TEMPERATURE_OVERSAMPLING_SKIP`
         -   `TEMPERATURE_OVERSAMPLING_X1` (default)
         -   `TEMPERATURE_OVERSAMPLING_X2`
