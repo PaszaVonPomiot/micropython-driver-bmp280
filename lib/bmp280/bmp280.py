@@ -56,7 +56,7 @@ class _Const:
     RESET_CODE = const(0xB6)
 
 
-class _Reg:
+class _Register:
     """BMP280 register addresses (complete memory map)."""
 
     TEMP_XLSB = const(0xFC)  # 4-bits (7-4)
@@ -119,11 +119,8 @@ class BMP280:
     ) -> None:
         self._i2c = i2c
         self._i2c_address = i2c_address
-        self._ctrl_meas = configuration.ctrl_meas
-        self._config = configuration.config
-        self._power_mode = configuration._power_mode
         self._read_calibration_data()
-        self._configure_sensor(ctrl_meas=self._ctrl_meas, config=self._config)
+        self.configure_sensor(configuration=configuration)
 
     def _read_register(self, register: int, burst: int = 1) -> bytes:
         """
@@ -137,9 +134,17 @@ class BMP280:
         """Write a single byte to a register on the BMP280 sensor."""
         self._i2c.writeto_mem(self._i2c_address, register, value, addrsize=8)
 
+    def configure_sensor(self, configuration: BMP280Configuration) -> None:
+        """Configure sensor. Runs automatically during class insantiation."""
+        self._config = configuration.config
+        self._ctrl_meas = configuration.ctrl_meas
+        self._power_mode = configuration._power_mode
+        self._write_register(register=_Register.CONFIG, value=self._config)
+        self._write_register(register=_Register.CTRL_MEAS, value=self._ctrl_meas)
+
     def _read_calibration_data(self) -> None:
         """Read and store 26 bytes of calibration data from the sensor."""
-        data = self._read_register(register=_Reg.CALIB00, burst=26)
+        data = self._read_register(register=_Register.CALIB00, burst=26)
         self._dig_T1 = struct.unpack("<H", data[0:2])[0]
         self._dig_T2 = struct.unpack("<h", data[2:4])[0]
         self._dig_T3 = struct.unpack("<h", data[4:6])[0]
@@ -153,14 +158,9 @@ class BMP280:
         self._dig_P8 = struct.unpack("<h", data[20:22])[0]
         self._dig_P9 = struct.unpack("<h", data[22:24])[0]
 
-    def _configure_sensor(self, ctrl_meas: bytes, config: bytes) -> None:
-        """Initial sensor configuration."""
-        self._write_register(register=_Reg.CONFIG, value=config)
-        self._write_register(register=_Reg.CTRL_MEAS, value=ctrl_meas)
-
     def _get_status(self) -> int:
         """Get byte from the STATUS register."""
-        status = self._read_register(_Reg.STATUS)
+        status = self._read_register(_Register.STATUS)
         return status[0]
 
     def _compensate_temperature(self, raw_temperature: int) -> float:
@@ -203,7 +203,7 @@ class BMP280:
         Measurement takes from 7 to 65 ms depending on oversampling configuration.
         P x16, T x2, F2 ~ 41 ms
         """
-        self._write_register(register=_Reg.CTRL_MEAS, value=self._ctrl_meas)
+        self._write_register(register=_Register.CTRL_MEAS, value=self._ctrl_meas)
         sleep_ms(milliseconds)
 
     def _get_raw_temperature(self) -> int:
@@ -212,7 +212,7 @@ class BMP280:
         For combined read of temperature and pressure, use read_raw() instead.
         """
         self._ensure_forced_mode_measurement()
-        burst_data = self._read_register(register=_Reg.TEMP_MSB, burst=3)
+        burst_data = self._read_register(register=_Register.TEMP_MSB, burst=3)
         raw_temp = (burst_data[0] << 12) | (burst_data[1] << 4) | (burst_data[2] >> 4)
         return raw_temp
 
@@ -222,7 +222,7 @@ class BMP280:
         For combined read of temperature and pressure, use read_raw() instead.
         """
         self._ensure_forced_mode_measurement()
-        burst_data = self._read_register(register=_Reg.PRESS_MSB, burst=3)
+        burst_data = self._read_register(register=_Register.PRESS_MSB, burst=3)
         raw_pressure = (
             (burst_data[0] << 12) | (burst_data[1] << 4) | (burst_data[2] >> 4)
         )
@@ -234,7 +234,7 @@ class BMP280:
         If the power mode is set to FORCED, a measurement will be triggered before reading.
         """
         self._ensure_forced_mode_measurement()
-        burst_data = self._read_register(register=_Reg.PRESS_MSB, burst=6)
+        burst_data = self._read_register(register=_Register.PRESS_MSB, burst=6)
         raw_temperature = (
             (burst_data[3] << 12) | (burst_data[4] << 4) | (burst_data[5] >> 4)
         )
@@ -250,13 +250,13 @@ class BMP280:
 
     def get_chip_id(self) -> str:
         """Get byte from the ID register."""
-        chip_id = self._read_register(_Reg.ID)
+        chip_id = self._read_register(_Register.ID)
         return hex(chip_id[0])
 
     def reset(self) -> None:
         """Reset the sensor."""
         reset_code = struct.pack("B", _Const.RESET_CODE)
-        self._write_register(register=_Reg.RESET, value=reset_code)
+        self._write_register(register=_Register.RESET, value=reset_code)
         sleep_ms(100)
 
     def get_temperature(self) -> float:
