@@ -2,9 +2,7 @@ from machine import Pin, I2C
 from lib.bmp280 import (
     BMP280,
     BMP280Configuration,
-    PRESSURE_OVERSAMPLING_X16,
-    TEMPERATURE_OVERSAMPLING_X2,
-    FILTER_COEFFICIENT_2,
+    Settings,
 )
 from utime import sleep_ms
 
@@ -19,9 +17,9 @@ def main():
     sensor = BMP280(
         i2c=i2c,
         configuration=BMP280Configuration(
-            pressure_oversampling=PRESSURE_OVERSAMPLING_X16,
-            temperature_oversampling=TEMPERATURE_OVERSAMPLING_X2,
-            filter_coefficient=FILTER_COEFFICIENT_2,
+            pressure_oversampling=Settings.PRESSURE_OVERSAMPLING_X16,
+            temperature_oversampling=Settings.TEMPERATURE_OVERSAMPLING_X2,
+            filter_coefficient=Settings.FILTER_COEFFICIENT_2,
         ),
     )
 
