@@ -5,7 +5,8 @@ MicroPython driver for BMP280 temperature and pressure sensor over I2C.
 
 ## Hardware
 
--   [BMP280 Datasheet](docs/bst-bmp280-ds001.pdf)
+-   BMP280 sensor ([Datasheet](docs/bst-bmp280-ds001.pdf))
+-   [Raspberry Pi Pico](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html) or any other MicroPython compatible board with I2C interface.
 
 ## Software
 
